@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using EnvVarManager.Core;
 
 namespace EnvVarManager.App.Services;
 
@@ -23,13 +24,18 @@ public sealed class CustomVariableRegistry
         try
         {
             var json = File.ReadAllText(_filePath);
-            return JsonSerializer.Deserialize<List<string>>(json) ?? [];
+            var names = JsonSerializer.Deserialize<List<string?>>(json) ?? [];
+            return NormalizeNames(names);
         }
         catch (JsonException)
         {
             return [];
         }
         catch (IOException)
+        {
+            return [];
+        }
+        catch (UnauthorizedAccessException)
         {
             return [];
         }
@@ -43,11 +49,20 @@ public sealed class CustomVariableRegistry
             Directory.CreateDirectory(directory);
         }
 
-        var normalized = names
+        var normalized = NormalizeNames(names);
+        var json = JsonSerializer.Serialize(normalized, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(_filePath, json);
+    }
+
+    private static string[] NormalizeNames(IEnumerable<string?> names)
+    {
+        return names
+            .OfType<string>()
+            .Select(x => x.Trim())
+            .Where(EnvironmentVariableNameValidator.IsValid)
+            .Select(EnvironmentVariableNameValidator.Normalize)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
             .ToArray();
-        var json = JsonSerializer.Serialize(normalized, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(_filePath, json);
     }
 }

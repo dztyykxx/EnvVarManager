@@ -10,7 +10,7 @@
 - 在右侧详情区按需查看或复制完整当前值。
 - 写入、覆盖、删除当前 Windows 用户级环境变量。
 - 添加自定义变量名，并保存在 `%APPDATA%\EnvVarManager\custom-variables.json`。
-- 保存或删除后广播 Windows 环境变量变更通知。
+- 保存或删除后异步通知 Windows 环境变量变更，不等待慢窗口响应。
 - 支持搜索变量名、服务名、说明和类别。
 
 ## 已预置的常见变量
@@ -81,7 +81,7 @@ dotnet publish src\EnvVarManager.App\EnvVarManager.App.csproj -c Release -r win-
 4. 重新打开终端、IDE 或 Codex，让新进程读取最新用户级环境变量。
 
 删除变量只会删除当前用户级环境变量，不会修改系统级环境变量。
-保存和删除不会广播通知其他程序刷新环境变量；这是为了避免 Windows 消息广播拖慢操作。
+保存和删除会尽量通知其他程序刷新环境变量，但不会等待慢窗口响应，因此界面会立即完成操作。
 
 ## 安全边界
 
