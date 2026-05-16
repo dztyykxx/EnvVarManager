@@ -25,6 +25,21 @@ public static class WindowsEnvironmentChangeNotifier
             out _);
     }
 
+    public static void NotifyInBackground()
+    {
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                Notify();
+            }
+            catch
+            {
+                // 环境变量已经写入；广播通知只是尽力提醒其他程序刷新。
+            }
+        });
+    }
+
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     private static extern IntPtr SendMessageTimeout(
         IntPtr hWnd,

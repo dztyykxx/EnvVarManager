@@ -216,9 +216,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             {
                 _manager.SetValue(savedName, savedValue);
                 Environment.SetEnvironmentVariable(savedName, savedValue, EnvironmentVariableTarget.Process);
-                WindowsEnvironmentChangeNotifier.Notify();
             });
 
+            WindowsEnvironmentChangeNotifier.NotifyInBackground();
             LoadEntries(savedName);
             StatusMessage = $"已保存 {savedName}。请重新打开终端、IDE 或 Codex 后使用。";
             HideCurrentValue();
@@ -275,9 +275,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             {
                 _manager.DeleteValue(deletedName);
                 Environment.SetEnvironmentVariable(deletedName, null, EnvironmentVariableTarget.Process);
-                WindowsEnvironmentChangeNotifier.Notify();
             });
 
+            WindowsEnvironmentChangeNotifier.NotifyInBackground();
             LoadEntries(deletedName);
             StatusMessage = $"已删除 {deletedName}。";
             HideCurrentValue();
