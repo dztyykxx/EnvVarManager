@@ -19,6 +19,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private string _revealedCurrentValue = "";
     private string _searchText = "";
     private bool _isCurrentValueRevealed;
+    private bool _isBusy;
     private ApiKeyRowViewModel? _selectedEntry;
     private string _statusMessage = "就绪。选择一个变量后可以保存新值或删除用户级环境变量。";
 
@@ -43,10 +44,10 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
         RefreshCommand = new RelayCommand(Refresh);
         AddCustomCommand = new RelayCommand(AddCustomVariable, () => !string.IsNullOrWhiteSpace(CustomName));
-        SaveCommand = new RelayCommand(SaveSelectedValue, CanSaveSelectedValue);
+        SaveCommand = new RelayCommand(SaveSelectedValueAsync, CanSaveSelectedValue);
         DeleteCommand = new RelayCommand(
-            DeleteSelectedValue,
-            () => SelectedEntry is not null && (SelectedEntry.IsSet || !SelectedEntry.IsKnown));
+            DeleteSelectedValueAsync,
+            () => !IsBusy && SelectedEntry is not null && (SelectedEntry.IsSet || !SelectedEntry.IsKnown));
         CopyNameCommand = new RelayCommand(CopySelectedName, () => SelectedEntry is not null);
         ToggleRevealCurrentValueCommand = new RelayCommand(ToggleRevealCurrentValue, CanReadCurrentValue);
         CopyCurrentValueCommand = new RelayCommand(CopyCurrentValue, CanReadCurrentValue);
@@ -131,6 +132,18 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         set => SetProperty(ref _statusMessage, value);
     }
 
+    public bool IsBusy
+    {
+        get => _isBusy;
+        set
+        {
+            if (SetProperty(ref _isBusy, value))
+            {
+                RaiseCommandStates();
+            }
+        }
+    }
+
     public string CurrentValueText
     {
         get
@@ -185,7 +198,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         StatusMessage = $"已添加 {normalizedName}。";
     }
 
-    private void SaveSelectedValue()
+    private async void SaveSelectedValueAsync()
     {
         if (SelectedEntry is null)
         {
@@ -193,11 +206,19 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         }
 
         var savedName = SelectedEntry.Name;
+        var savedValue = DraftValue;
+        IsBusy = true;
+        StatusMessage = $"正在保存 {savedName}...";
+
         try
         {
-            _manager.SetValue(savedName, DraftValue);
-            Environment.SetEnvironmentVariable(savedName, DraftValue, EnvironmentVariableTarget.Process);
-            WindowsEnvironmentChangeNotifier.Notify();
+            await Task.Run(() =>
+            {
+                _manager.SetValue(savedName, savedValue);
+                Environment.SetEnvironmentVariable(savedName, savedValue, EnvironmentVariableTarget.Process);
+                WindowsEnvironmentChangeNotifier.Notify();
+            });
+
             LoadEntries(savedName);
             StatusMessage = $"已保存 {savedName}。请重新打开终端、IDE 或 Codex 后使用。";
             HideCurrentValue();
@@ -207,9 +228,17 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         {
             StatusMessage = ex.Message;
         }
+        catch (Exception ex)
+        {
+            StatusMessage = $"保存失败：{ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
-    private void DeleteSelectedValue()
+    private async void DeleteSelectedValueAsync()
     {
         if (SelectedEntry is null)
         {
@@ -237,13 +266,31 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             return;
         }
 
-        _manager.DeleteValue(deletedName);
-        Environment.SetEnvironmentVariable(deletedName, null, EnvironmentVariableTarget.Process);
-        WindowsEnvironmentChangeNotifier.Notify();
-        LoadEntries(deletedName);
-        StatusMessage = $"已删除 {deletedName}。";
-        HideCurrentValue();
-        ClearSecretInputRequested?.Invoke();
+        IsBusy = true;
+        StatusMessage = $"正在删除 {deletedName}...";
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                _manager.DeleteValue(deletedName);
+                Environment.SetEnvironmentVariable(deletedName, null, EnvironmentVariableTarget.Process);
+                WindowsEnvironmentChangeNotifier.Notify();
+            });
+
+            LoadEntries(deletedName);
+            StatusMessage = $"已删除 {deletedName}。";
+            HideCurrentValue();
+            ClearSecretInputRequested?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"删除失败：{ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private void RemoveCustomName(string name)
@@ -324,7 +371,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     private bool CanSaveSelectedValue()
     {
-        return SelectedEntry is not null && !string.IsNullOrWhiteSpace(DraftValue);
+        return !IsBusy && SelectedEntry is not null && !string.IsNullOrWhiteSpace(DraftValue);
     }
 
     private void LoadEntries(string? selectName = null)

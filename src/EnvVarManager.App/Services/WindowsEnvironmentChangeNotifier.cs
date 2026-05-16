@@ -21,7 +21,7 @@ public static class WindowsEnvironmentChangeNotifier
             UIntPtr.Zero,
             "Environment",
             SmtoAbortIfHung,
-            1000,
+            100,
             out _);
     }
 
