@@ -54,8 +54,24 @@ public sealed class EnvironmentVariableManager
             entries.Add(BuildEntry(
                 normalizedName,
                 normalizedName,
-                "自定义环境变量",
+                _store.GetValue(normalizedName) is null ? "自定义环境变量" : "当前用户级环境变量",
                 "Custom",
+                isKnown: false));
+        }
+
+        foreach (var name in _store.GetNames())
+        {
+            var normalizedName = EnvironmentVariableNameValidator.Normalize(name);
+            if (!names.Add(normalizedName))
+            {
+                continue;
+            }
+
+            entries.Add(BuildEntry(
+                normalizedName,
+                normalizedName,
+                "当前用户级环境变量",
+                "User",
                 isKnown: false));
         }
 

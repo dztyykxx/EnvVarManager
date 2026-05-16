@@ -8,6 +8,19 @@ public sealed class UserEnvironmentVariableStore : IEnvironmentVariableStore
         return Environment.GetEnvironmentVariable(name, EnvironmentVariableTarget.User);
     }
 
+    public IReadOnlyList<string> GetNames()
+    {
+        return Environment
+            .GetEnvironmentVariables(EnvironmentVariableTarget.User)
+            .Keys
+            .OfType<string>()
+            .Where(EnvironmentVariableNameValidator.IsValid)
+            .Select(EnvironmentVariableNameValidator.Normalize)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
     public void SetValue(string name, string value)
     {
         EnvironmentVariableNameValidator.ThrowIfInvalid(name);

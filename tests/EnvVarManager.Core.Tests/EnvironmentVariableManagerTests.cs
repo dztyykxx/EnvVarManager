@@ -95,6 +95,22 @@ public sealed class EnvironmentVariableManagerTests
         Assert.Equal(["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "CUSTOM_TOKEN"], entries.Select(x => x.Name));
     }
 
+    [Fact]
+    public void BuildEntriesIncludesExistingUserEnvironmentNames()
+    {
+        var store = new InMemoryEnvironmentVariableStore();
+        var manager = new EnvironmentVariableManager(store, []);
+
+        manager.SetValue("FOO", "bar");
+
+        var entries = manager.BuildEntries([]).ToArray();
+
+        var entry = Assert.Single(entries);
+        Assert.Equal("FOO", entry.Name);
+        Assert.True(entry.IsSet);
+        Assert.Equal("****", entry.MaskedValue);
+    }
+
     private sealed class InMemoryEnvironmentVariableStore : IEnvironmentVariableStore
     {
         private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
@@ -102,6 +118,11 @@ public sealed class EnvironmentVariableManagerTests
         public string? GetValue(string name)
         {
             return _values.GetValueOrDefault(name);
+        }
+
+        public IReadOnlyList<string> GetNames()
+        {
+            return _values.Keys.ToArray();
         }
 
         public void SetValue(string name, string value)

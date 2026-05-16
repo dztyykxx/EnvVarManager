@@ -5,6 +5,7 @@
 ## 功能
 
 - 查看常见 API key 变量是否已设置。
+- 自动显示当前 Windows 用户级环境变量里已经存在的变量名。
 - 默认按 `sk-****ef` 这类格式脱敏展示已设置变量。
 - 在右侧详情区按需查看或复制完整当前值。
 - 写入、覆盖、删除当前 Windows 用户级环境变量。
@@ -64,6 +65,7 @@ dotnet publish src\EnvVarManager.App\EnvVarManager.App.csproj -c Release -r win-
 4. 重新打开终端、IDE 或 Codex，让新进程读取最新用户级环境变量。
 
 删除变量只会删除当前用户级环境变量，不会修改系统级环境变量。
+保存和删除不会广播通知其他程序刷新环境变量；这是为了避免 Windows 消息广播拖慢操作。
 
 ## 安全边界
 
