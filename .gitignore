@@ -11,3 +11,4 @@ TestResults/
 *.snupkg
 publish/
 artifacts/
+dist/

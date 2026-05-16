@@ -10,6 +10,7 @@
         Width="1120"
         MinWidth="960"
         WindowStartupLocation="CenterScreen"
+        Icon="Assets/AppIcon.ico"
         Background="#F4F6F8"
         FontFamily="Microsoft YaHei UI, Segoe UI">
     <Window.Resources>
