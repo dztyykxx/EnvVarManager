@@ -111,6 +111,26 @@ public sealed class EnvironmentVariableManagerTests
         Assert.Equal("****", entry.MaskedValue);
     }
 
+    [Theory]
+    [InlineData("MOONSHOT_API_KEY")]
+    [InlineData("ZAI_API_KEY")]
+    [InlineData("QIANFAN_ACCESS_KEY")]
+    [InlineData("QIANFAN_SECRET_KEY")]
+    [InlineData("ARK_API_KEY")]
+    [InlineData("HUNYUAN_API_KEY")]
+    [InlineData("TENCENTCLOUD_SECRET_ID")]
+    [InlineData("TENCENTCLOUD_SECRET_KEY")]
+    [InlineData("MINIMAX_API_KEY")]
+    [InlineData("BAICHUAN_API_KEY")]
+    [InlineData("YI_API_KEY")]
+    [InlineData("STEP_API_KEY")]
+    [InlineData("SILICONFLOW_API_KEY")]
+    [InlineData("MODELSCOPE_API_TOKEN")]
+    public void DefaultCatalogContainsCommonChineseModelProviderKeys(string name)
+    {
+        Assert.Contains(KnownApiKeyCatalog.DefaultDefinitions, x => x.Name == name);
+    }
+
     private sealed class InMemoryEnvironmentVariableStore : IEnvironmentVariableStore
     {
         private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
